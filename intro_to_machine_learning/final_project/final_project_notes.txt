@@ -1,0 +1,166 @@
+Data Cleanup/Feature Selection:  I used the sample report as a starting point, and created a feature which looks at the number of emails to and from a poi compared to the number of emails sent/received.  In order to do this, I had to account for all the values which contained zeros in the denominator (otherwise python throws an error).
+
+
+"there is still a risk of overfitting on the test set because the parameters can be tweaked until the estimator performs optimally. This way, knowledge about the test set can “leak” into the model and evaluation metrics no longer report on generalization performance. " --from sklearn documentation
+
+
+And after a few days of work, I’m starting over.  I didn’t follow the template of the final project, so instead of trying to fit what I’ve done into the project, I’m going to restart and use my prior work as a guide.
+
+Originally i used a shared email with poi percentage, but it looks like using the raw shared email poi number is more valuable.
+
+After not getting much traction on improving my recall/precision score, I decided to addd all of the features to the classifier.  This resulted in a 100% accurate decision tree.  The attribution analysis, humorously, showed that the most powerful feature was ‘poi’ i.e. whether the person was a poi.
+
+I wrote I script that looked at all the powersets of 12 features.  I took out features which didn’t seem to do all that great a job at predicting, but which features were chose was somewhat arbitrary and due to system constraints.  The rate at which the powersets grow is 2^n, so each feature I added meant my processing time grew exponentially. 
+
+
+————————————————————————————————————————————————
+Removed:
+'restricted_stock_deferred'
+'expenses'
+'other'
+'total_stock_value'
+'restricted_stock'
+'to_poi_perc'
+'from_poi_perc'
+'from_messages'
+'loan_advances'
+'salary'
+'to_messages'
+
+Current Starting List:
+features_list = ['poi','salary', 'to_messages', 'deferral_payments', 'total_payments', 'bonus', 'deferred_income', 'from_poi_to_this_person', 'exercised_stock_options','from_this_person_to_poi', 'long_term_incentive', 'shared_receipt_with_poi', 'restricted_stock']
+
+
+Decision Tree Optimized
+average precision:  0.509259259259
+average recall:  0.722222222222
+['poi', 'deferral_payments', 'deferred_income']
+1.23148148148
+
+
+Random Forrest Optimized
+['poi', 'deferral_payments', 'deferred_income']
+average precision:  0.583333333333
+average recall:  0.666666666667
+1.25
+
+Naive Bayes Optimized
+average precision:  0.809523809524
+average recall:  0.388888888889
+1.19841269841
+——————————————————————————————————————————————————————————————————————————————————————————
+
+
+'''---------Decision Tree---------------'''
+from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier
+
+clf = DecisionTreeClassifier(random_state=random_clf, min_samples_split=3)
+clf.fit(feature_train, label_train)
+pred = clf.predict(feature_test) #create an array of predictions
+
+from helper_functions import average_stats
+
+#score, precision, recall =  average_stats(clf, feature_test, label_test, 1)
+
+print '\n'+"Decision Tree"
+
+print features_list[1:]
+print clf.feature_importances_
+
+
+
+
+"""---------Random Forest---------------"""
+from sklearn.ensemble import RandomForestClassifier
+
+clf = RandomForestClassifier(random_state=random_clf)
+clf = clf.fit(feature_train, label_train) #train the classifier
+pred = clf.predict(feature_test) #create an array of predictions
+
+print '\n'+"Random Forest"
+
+print features_list[1:]
+print clf.feature_importances_
+
+accuracy = cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='accuracy')       
+print("Accuracy: %0.2f (+/- %0.2f)" % (accuracy.mean(), accuracy.std() * 2))  
+
+recall =cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='recall')       
+print("Recall: %0.2f (+/- %0.2f)" % (recall.mean(), recall.std() * 2))  
+
+precision = cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='average_precision')       
+print("Precision: %0.2f (+/- %0.2f)" % (precision.mean(), precision.std() * 2))
+
+f1scores = cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='f1')       
+print("F1 Score: %0.2f (+/- %0.2f)" % (f1scores.mean(), f1scores.std() * 2))  
+
+
+"""---------Naive Bayes---------------"""
+from sklearn.naive_bayes import GaussianNB
+clf = GaussianNB()
+clf = clf.fit(feature_train, label_train) #train the classifier
+pred = clf.predict(feature_test) #create an array of predictions
+
+print '\n'+"Naive Bayes"
+
+accuracy = cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='accuracy')       
+print("Accuracy: %0.2f (+/- %0.2f)" % (accuracy.mean(), accuracy.std() * 2))  
+
+
+recall =cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='recall')       
+print("Recall: %0.2f (+/- %0.2f)" % (recall.mean(), recall.std() * 2))  
+
+precision = cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='average_precision')       
+print("Precision: %0.2f (+/- %0.2f)" % (precision.mean(), precision.std() * 2))
+
+f1scores = cross_val_score(clf, feature_train, label_train, cv=cv_runs, scoring='f1')       
+print("F1 Score: %0.2f (+/- %0.2f)" % (f1scores.mean(), f1scores.std() * 2)) 
+
+
+for s in ps: #iterate like crazy
+    features_list = s
+
+    if len(s)!=0 and len(s)!=1:
+        w_poi = features_list
+        w_poi.insert(0,'poi')
+        data = featureFormat(my_dataset, features_list)
+
+        ### split into labels and features (this line assumes that the first
+        ### feature in the array is the label, which is why "poi" must always
+        ### be first in features_list
+        labels, features = targetFeatureSplit(data)
+
+
+        ### machine learning goes here!
+        ### please name your classifier clf for easy export below
+
+        from sklearn.cross_validation import train_test_split, cross_val_score
+        from sklearn.metrics import confusion_matrix
+
+        feature_train, feature_test, label_train, label_test = train_test_split(features, labels, random_state=0)
+
+
+
+        '''*Testing Params*'''
+        random_clf = 0
+
+        """---------Random Forest---------------"""
+
+        clf = RandomForestClassifier(random_state=random_clf)
+        clf = clf.fit(feature_train, label_train) #train the classifier
+        pred = clf.predict(feature_test) #create an array of predictions
+        
+        pickle.dump(clf, open("my_classifier.pkl", "w") )
+        pickle.dump(data_dict, open("my_dataset.pkl", "w") )
+        pickle.dump(features_list, open("my_feature_list.pkl", "w") )
+    
+        cur_sum = sum(my_test())
+        
+    
+        if cur_sum>best_sum:
+            best_features = s
+            best_sum = cur_sum
+            
+            
+print best_features, best_sum 

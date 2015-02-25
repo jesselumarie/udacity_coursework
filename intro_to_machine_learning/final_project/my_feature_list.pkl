@@ -1,0 +1,8 @@
+(lp0
+S'poi'
+p1
+aS'deferral_payments'
+p2
+aS'deferred_income'
+p3
+a.
