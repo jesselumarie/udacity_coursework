@@ -1,0 +1,4 @@
+
+What area of the world you used for your project? Post a link to the map position and write a short description. Note that the osm file of the map should be at least 50MB.
+
+https://www.openstreetmap.org/export#map=14/41.9161/-87.6738
